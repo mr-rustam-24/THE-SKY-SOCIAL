@@ -36,7 +36,7 @@
 /* Subtle light luxury scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
+  height: 16px;
 }
 
 ::-webkit-scrollbar-track {
