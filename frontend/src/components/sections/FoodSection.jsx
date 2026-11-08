@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, UtensilsCrossed, Sparkles, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { MENU_ITEMS } from '../../data/restaurantData.js';
+import { getMenuItems } from '../../api/client.js';
 
 // All Menu Categories
 const CATEGORIES = [
@@ -20,6 +21,7 @@ const INITIAL_ITEM_LIMIT = 4;
 
 // Clean Student-Friendly Menu Section with Soft Light Card Colors
 export function FoodSection({ onOpenBooking, onOpenOriginalCards }) {
+  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dietaryFilter, setDietaryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,8 +29,16 @@ export function FoodSection({ onOpenBooking, onOpenOriginalCards }) {
   // Controls whether the list is expanded or compact
   const [isExpanded, setIsExpanded] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    getMenuItems()
+      .then((result) => { if (active && Array.isArray(result.items)) setMenuItems(result.items); })
+      .catch((error) => console.warn('Using bundled menu because the API is unavailable:', error.message));
+    return () => { active = false; };
+  }, []);
+
   // Filter items based on Category, Veg/Non-Veg, and Search text
-  const filteredItems = MENU_ITEMS.filter((item) => {
+  const filteredItems = menuItems.filter((item) => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
 
     let matchesDiet = true;
