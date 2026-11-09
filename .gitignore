@@ -41,3 +41,7 @@ vite.config.ts.timestamp-*
 .env
 .env.*
 !.env.example
+
+# Database files
+*-db.json
+*.db
