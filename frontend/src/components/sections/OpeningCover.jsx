@@ -80,9 +80,11 @@ export function OpeningCover({ onEnter }) {
       {/* 1. Full Screen Background Image (100% Edge-to-Edge) */}
       <motion.img
         src="/assets/images/restaurant_cover.png"
-        alt="Restaurant Cover"
-        initial={{ scale: 1.02 }}
-        animate={{ scale: isAnimatingOut ? 1.08 : 1 }}
+        alt="Skypiea Rooftop Restaurant Cover"
+        loading="eager"
+        fetchPriority="high"
+        initial={{ scale: 1 }}
+        animate={{ scale: isAnimatingOut ? 1.05 : 1 }}
         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
         className="absolute inset-0 w-full h-full object-cover object-center"
       />
