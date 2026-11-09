@@ -74,7 +74,7 @@ export function OpeningCover({ onEnter }) {
       transition={{ duration: 0.55, ease: 'easeOut' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
-      className="relative w-full h-screen h-[100dvh] overflow-hidden select-none bg-[#120f0c] text-[#f7eedf] flex items-center justify-center cursor-pointer"
+      className="relative w-full min-h-[100svh] h-[100dvh] overflow-hidden select-none bg-[#120f0c] text-[#f7eedf] flex items-center justify-center cursor-pointer"
       onClick={() => triggerExit('home')}
     >
       {/* 1. Full Screen Background Image (100% Edge-to-Edge) */}
@@ -104,7 +104,7 @@ export function OpeningCover({ onEnter }) {
 
       {/* 4. Bottom Controls & Animated Slide Indicator */}
       <div
-        className="absolute bottom-6 sm:bottom-8 left-0 right-0 z-30 px-4 flex flex-col items-center justify-center text-center gap-3.5"
+        className="absolute bottom-6 sm:bottom-8 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)] flex flex-col items-center justify-center text-center gap-3.5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Action Buttons Row */}

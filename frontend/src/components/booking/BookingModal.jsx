@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle2, MapPin, MessageCircle } from 'lucide-react';
 import { SEATING_ZONES } from '../../data/restaurantData.js';
+import { createReservation } from '../../api/client.js';
 
-const DAY_OPTIONS = [
-  { label: 'Tonight', sub: 'Today' },
-  { label: 'Tomorrow', sub: 'Nov 3' },
-  { label: 'Friday', sub: 'Nov 7' },
-  { label: 'Saturday', sub: 'Nov 8' }
-];
+const DAY_OPTIONS = Array.from({ length: 4 }, (_, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() + index);
+  const iso = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  return { date: iso, label: index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : date.toLocaleDateString('en-IN', { weekday: 'long' }), sub: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) };
+});
 
 const TIME_OPTIONS = [
   { time: '6:30 PM', tag: 'Sunset View' },
@@ -26,7 +27,7 @@ export const BookingModal = ({
   currentUser
 }) => {
   const [guestCount, setGuestCount] = useState(2);
-  const [selectedDayOption, setSelectedDayOption] = useState('Today');
+  const [selectedDate, setSelectedDate] = useState(DAY_OPTIONS[0].date);
   const [selectedTime, setSelectedTime] = useState('8:00 PM');
   const [selectedZone, setSelectedZone] = useState(initialZone);
   const [guestName, setGuestName] = useState(currentUser?.name || 'Aditya Verma');
@@ -43,12 +44,29 @@ export const BookingModal = ({
 
   const [confirmed, setConfirmed] = useState(false);
   const [reservationCode, setReservationCode] = useState('');
+  const [bookingError, setBookingError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    const code = `SKP-LKO-${Math.floor(1000 + Math.random() * 9000)}`;
-    setReservationCode(code);
-    setConfirmed(true);
+    setBookingError('');
+    setIsSubmitting(true);
+    try {
+      const booking = await createReservation({
+        date: selectedDate,
+        time: selectedTime,
+        guestCount,
+        zone: selectedZone,
+        guest: { name: guestName, phone: guestPhone },
+        specialRequest
+      });
+      setReservationCode(booking.id);
+      setConfirmed(true);
+    } catch (error) {
+      setBookingError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -117,7 +135,7 @@ export const BookingModal = ({
               </div>
               <div className="flex justify-between py-1 border-b border-[#e8e2d8]">
                 <span className="text-[#74685e]">When</span>
-                <span className="text-[#1d1b16] font-semibold">{selectedDayOption} at {selectedTime}</span>
+                <span className="text-[#1d1b16] font-semibold">{new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} at {selectedTime}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#e8e2d8]">
                 <span className="text-[#74685e]">Party Size</span>
@@ -160,9 +178,9 @@ export const BookingModal = ({
                   <button
                     key={opt.label}
                     type="button"
-                    onClick={() => setSelectedDayOption(opt.label)}
+                    onClick={() => setSelectedDate(opt.date)}
                     className={`py-2 px-1 text-center rounded border transition-colors cursor-pointer ${
-                      selectedDayOption === opt.label
+                      selectedDate === opt.date
                         ? 'bg-[#1d1b16] text-white border-[#1d1b16] shadow-sm'
                         : 'bg-[#fcfaf7] border-[#e8e2d8] text-[#1d1b16] hover:border-[#b28a56]'
                     }`}
@@ -267,11 +285,13 @@ export const BookingModal = ({
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-3 bg-[#1d1b16] hover:bg-[#b28a56] text-white text-xs font-semibold tracking-[0.2em] uppercase rounded transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-[#1d1b16] hover:bg-[#b28a56] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-semibold tracking-[0.2em] uppercase rounded transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
               >
-                <span>Confirm Reservation Instantly</span>
+                <span>{isSubmitting ? 'Submitting Reservation…' : 'Confirm Reservation'}</span>
                 <span>→</span>
               </button>
+              {bookingError && <p role="alert" className="text-center text-xs text-red-700 mt-2">{bookingError}</p>}
               <p className="text-center text-[10px] text-[#74685e] mt-2">
                 ✓ No prepayment required · Instant table hold at Level 15, Gomti Nagar
               </p>
