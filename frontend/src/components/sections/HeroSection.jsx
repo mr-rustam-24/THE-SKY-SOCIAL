@@ -38,7 +38,9 @@ export function HeroSection({ onExploreMenu, onBookTable }) {
           <img
             src={item.image}
             alt={item.title}
-            className="w-full h-full object-cover object-center brightness-[0.75] transform scale-105 transition-transform duration-6000 ease-out"
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            className="w-full h-full object-cover object-center brightness-[0.82] transition-transform duration-7000 ease-out"
           />
           {/* Subtle Clean Dark Gradient for text clarity */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/45" />
