@@ -1,56 +1,52 @@
-# Skipee: The Rooftop Restaurant
+# The Sky Social — Frontend
 
-A luxury modern Indian & Awadhi haute cuisine rooftop restaurant experience located in Gomti Nagar, Lucknow. Built with React 19, Vite, Tailwind CSS v4, and Motion.
-
----
-
-## Project Structure
-
-```text
-├── public/                       # Static brand photography & media assets
-│   └── assets/
-├── src/                          # Pure Frontend Architecture (React 19)
-│   ├── components/               # Modular UI components
-│   │   ├── booking/              # Table reservation modal
-│   │   │   └── BookingModal.jsx
-│   │   ├── layout/               # Header navigation & footer
-│   │   │   ├── Navigation.jsx
-│   │   │   └── Footer.jsx
-│   │   └── sections/             # Food menu, cocktails, rooftop zones, opening cover
-│   │       ├── OpeningCover.jsx
-│   │       ├── FoodSection.jsx
-│   │       ├── BeveragesSection.jsx
-│   │       └── SeasonalitySection.jsx
-│   ├── data/
-│   │   └── restaurantData.js     # Tasting menu courses, à la carte & seating zones
-│   ├── utils/
-│   │   └── ambientAudio.js       # Web Audio API ambient rooftop resonance
-│   ├── App.jsx                   # Main application shell
-│   ├── index.css                 # Tailwind theme tokens & typography
-│   └── main.jsx                  # React DOM entry point
-├── index.html                    # HTML entry point
-├── package.json                  # Scripts & dependencies
-└── vite.config.ts                # Vite build configuration
-```
+The client-side single page application (SPA) for **The Sky Social / Skypiea Rooftop Restaurant**. Built with React 19, Vite, Tailwind CSS v4, and Motion.
 
 ---
 
-## Running the Application
+## Quick Start
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Start the Frontend Development Server
+### 2. Start the Development Server
 ```bash
 npm run dev
 ```
-
-The app will start at **http://localhost:3000**.
+The server will start at `http://localhost:3000`.
 
 ### 3. Build for Production
 ```bash
 npm run build
 ```
-The optimized production output will be generated in `dist/`.
+Optimized assets will be generated in `dist/`.
+
+---
+
+## Available Commands
+
+* `npm run dev`: Starts Vite dev server on port 3000.
+* `npm run build`: Bundles the application with Vite.
+* `npm run preview`: Serves the production build locally.
+* `npm run lint`: Runs type checks via `tsc --noEmit`.
+* `npm run clean`: Clears the `dist/` directory.
+
+---
+
+## Project Structure
+
+```text
+src/
+├── components/
+│   ├── auth/           # Login (Phone OTP / Password) & Registration modal
+│   ├── booking/        # Table reservation modal with WhatsApp integration
+│   ├── layout/         # Navigation bar & Footer
+│   └── sections/       # Hero slider, Digital menu, Original cards, Contact
+├── data/
+│   └── restaurantData.js # Menu courses, pricing, seating zones, and info
+├── App.jsx             # Main application layout & modal controller
+├── index.css           # Tailwind CSS directives & global scrollbar styling
+└── main.jsx            # Application entry point
+```

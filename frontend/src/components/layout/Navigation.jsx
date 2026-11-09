@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Menu, X, Calendar, User, LogOut } from 'lucide-react';
 import { RESTAURANT_INFO } from '../../data/restaurantData.js';
 
-// Clean, Student-Friendly White Navigation Bar with Login/Sign Up
+// Navigation Bar with Authentication and Table Reservation
 export function Navigation({
   activeSection,
   onNavigate,

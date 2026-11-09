@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Utensils, Calendar } from 'lucide-react';
 import { HERO_SLIDES } from '../../data/restaurantData.js';
 
-// Clean, Student-Friendly Hero Carousel
+// Hero Section Carousel
 export function HeroSection({ onExploreMenu, onBookTable }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 

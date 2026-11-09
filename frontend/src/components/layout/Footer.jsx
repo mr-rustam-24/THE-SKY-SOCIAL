@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowUp, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { RESTAURANT_INFO } from '../../data/restaurantData.js';
 
-// Clean, Student-Friendly White Theme Footer
+// Footer Component
 export function Footer({ onNavigate, onOpenBooking, onReturnToCover }) {
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });

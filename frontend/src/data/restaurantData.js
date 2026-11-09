@@ -16,7 +16,7 @@ export const RESTAURANT_INFO = {
   }
 };
 
-// Hero Carousel Slides (Featuring the owner's uploaded restaurant images)
+// Hero Carousel Slides
 export const HERO_SLIDES = [
   {
     id: 1,
@@ -36,7 +36,7 @@ export const HERO_SLIDES = [
   }
 ];
 
-// All 9 Scanned Original Menu Cards uploaded by the owner
+// Original Printed Menu Cards
 export const ORIGINAL_MENU_PAGES = [
   {
     id: 1,

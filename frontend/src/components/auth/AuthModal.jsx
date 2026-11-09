@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, KeyRound, Smartphone, RefreshCw } from 'lucide-react';
 
-// Clean, Student-Friendly & User-Friendly Authentication Modal
-// Features: Phone + OTP Login, Password Login, and Sign Up (No Skypiea branding)
+// Authentication Modal (Phone OTP, Email/Password Login, and User Registration)
 export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   // Main Tab: 'login' or 'signup'
   const [authMode, setAuthMode] = useState('login');
@@ -49,7 +48,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setResendTimer(30);
   }
 
-  // Auto-fill generated OTP for instant student/user testing
+  // Populate generated OTP code
   function handleAutoFillOtp() {
     setUserEnteredOtp(generatedOtp);
     setErrorMsg('');

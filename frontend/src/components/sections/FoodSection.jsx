@@ -18,7 +18,7 @@ const CATEGORIES = [
 // Super compact: show only 4 items initially before expanding
 const INITIAL_ITEM_LIMIT = 4;
 
-// Clean Student-Friendly Menu Section with Soft Light Card Colors
+// Menu Section with Category Filtering and Search
 export function FoodSection({ onOpenBooking, onOpenOriginalCards }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [dietaryFilter, setDietaryFilter] = useState('all');
