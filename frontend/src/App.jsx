@@ -9,6 +9,8 @@ import { ContactSection } from './components/sections/ContactSection.jsx';
 import { Footer } from './components/layout/Footer.jsx';
 import { BookingModal } from './components/booking/BookingModal.jsx';
 import { AuthModal } from './components/auth/AuthModal.jsx';
+import { ORIGINAL_MENU_PAGES, RESTAURANT_INFO } from './data/restaurantData.js';
+import { getCurrentUser, getOriginalMenuPages, getRestaurantInfo } from './api/client.js';
 
 // Main Application Component
 export default function App() {
@@ -26,16 +28,37 @@ export default function App() {
 
   // Login / Sign Up authentication modal state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [restaurantInfo, setRestaurantInfo] = useState(RESTAURANT_INFO);
+  const [originalMenuPages, setOriginalMenuPages] = useState(ORIGINAL_MENU_PAGES);
+
+  useEffect(() => {
+    let active = true;
+    getRestaurantInfo().then((info) => { if (active && info) setRestaurantInfo(info); }).catch(() => {});
+    getOriginalMenuPages().then((pages) => { if (active && Array.isArray(pages)) setOriginalMenuPages(pages); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // Logged-in user state (persisted in localStorage)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
+      if (!localStorage.getItem('restaurant_auth_token')) return null;
       const saved = localStorage.getItem('restaurant_active_user') || localStorage.getItem('skypiea_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
+
+  useEffect(() => {
+    if (!localStorage.getItem('restaurant_auth_token')) return;
+    getCurrentUser()
+      .then((user) => setCurrentUser(user))
+      .catch(() => {
+        localStorage.removeItem('restaurant_auth_token');
+        localStorage.removeItem('restaurant_active_user');
+        setCurrentUser(null);
+      });
+  }, []);
 
   // Open reservation modal
   function handleOpenBooking(zone = 'main_dining') {
@@ -57,6 +80,7 @@ export default function App() {
   function handleLogout() {
     localStorage.removeItem('restaurant_active_user');
     localStorage.removeItem('skypiea_user');
+    localStorage.removeItem('restaurant_auth_token');
     setCurrentUser(null);
   }
 
@@ -130,6 +154,7 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthOpen(true)}
               onLogout={handleLogout}
+              restaurantInfo={restaurantInfo}
             />
 
             {/* Main Page Sections */}
@@ -149,11 +174,12 @@ export default function App() {
               />
 
               {/* Original Printed Menu Cards Section */}
-              <OriginalMenuSection />
+              <OriginalMenuSection pages={originalMenuPages} />
 
               {/* Contact, Timings & Location Section */}
               <ContactSection
                 onBookTable={() => handleOpenBooking('main_dining')}
+                restaurantInfo={restaurantInfo}
               />
             </main>
 
@@ -162,6 +188,7 @@ export default function App() {
               onNavigate={handleNavigate}
               onOpenBooking={() => handleOpenBooking('main_dining')}
               onReturnToCover={handleReturnToCover}
+              restaurantInfo={restaurantInfo}
             />
           </motion.div>
         )}

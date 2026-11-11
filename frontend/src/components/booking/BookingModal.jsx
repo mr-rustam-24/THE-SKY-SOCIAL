@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle2, MapPin, MessageCircle } from 'lucide-react';
 import { SEATING_ZONES } from '../../data/restaurantData.js';
-import { createReservation } from '../../api/client.js';
+import { confirmReservationPayment, createReservation, createReservationPaymentOrder, getReservationAvailability } from '../../api/client.js';
 
-const DAY_OPTIONS = Array.from({ length: 4 }, (_, index) => {
-  const date = new Date();
-  date.setDate(date.getDate() + index);
-  const iso = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
-  return { date: iso, label: index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : date.toLocaleDateString('en-IN', { weekday: 'long' }), sub: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) };
-});
+const toDateInputValue = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+const today = new Date();
+const MIN_BOOKING_DATE = toDateInputValue(today);
+const latestBookingDate = new Date(today.getFullYear(), today.getMonth() + 1, Math.min(today.getDate(), new Date(today.getFullYear(), today.getMonth() + 2, 0).getDate()));
+const MAX_BOOKING_DATE = toDateInputValue(latestBookingDate);
 
 const TIME_OPTIONS = [
   { time: '6:30 PM', tag: 'Sunset View' },
@@ -18,7 +17,16 @@ const TIME_OPTIONS = [
   { time: '10:30 PM', tag: 'Twilight Cocktails' }
 ];
 
-const GUEST_OPTIONS = [2, 3, 4, 6, 8];
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export const BookingModal = ({
   isOpen,
@@ -26,13 +34,17 @@ export const BookingModal = ({
   initialZone = 'main_dining',
   currentUser
 }) => {
-  const [guestCount, setGuestCount] = useState(2);
-  const [selectedDate, setSelectedDate] = useState(DAY_OPTIONS[0].date);
+  const [guestCount, setGuestCount] = useState('2');
+  const [selectedDate, setSelectedDate] = useState(MIN_BOOKING_DATE);
   const [selectedTime, setSelectedTime] = useState('8:00 PM');
   const [selectedZone, setSelectedZone] = useState(initialZone);
   const [guestName, setGuestName] = useState(currentUser?.name || 'Aditya Verma');
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '+91 98765 43210');
   const [specialRequest, setSpecialRequest] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('at_restaurant');
+  const [slotAvailability, setSlotAvailability] = useState(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
 
   // Auto-fill user details if logged in
   React.useEffect(() => {
@@ -41,6 +53,30 @@ export const BookingModal = ({
       if (currentUser.phone) setGuestPhone(currentUser.phone);
     }
   }, [currentUser]);
+
+  React.useEffect(() => {
+    const guests = Number(guestCount);
+    if (!isOpen || !Number.isInteger(guests) || guests < 1 || guests > 15) return undefined;
+    let active = true;
+    setIsCheckingAvailability(true);
+    setAvailabilityError('');
+    getReservationAvailability({ date: selectedDate, guests, zone: selectedZone })
+      .then((result) => {
+        if (!active) return;
+        const available = Object.fromEntries(result.slots.map((slot) => [slot.time, slot.available]));
+        setSlotAvailability(available);
+        const firstAvailable = result.slots.find((slot) => slot.available);
+        if (firstAvailable && !available[selectedTime]) setSelectedTime(firstAvailable.time);
+      })
+      .catch((error) => {
+        if (active) {
+          setSlotAvailability(null);
+          setAvailabilityError(error.message);
+        }
+      })
+      .finally(() => { if (active) setIsCheckingAvailability(false); });
+    return () => { active = false; };
+  }, [isOpen, selectedDate, selectedZone, guestCount]);
 
   const [confirmed, setConfirmed] = useState(false);
   const [reservationCode, setReservationCode] = useState('');
@@ -51,21 +87,53 @@ export const BookingModal = ({
     e.preventDefault();
     setBookingError('');
     setIsSubmitting(true);
+    let checkoutOpened = false;
     try {
-      const booking = await createReservation({
+      const reservation = {
         date: selectedDate,
         time: selectedTime,
-        guestCount,
+        guestCount: Number(guestCount),
         zone: selectedZone,
         guest: { name: guestName, phone: guestPhone },
         specialRequest
-      });
+      };
+      if (paymentMethod === 'prepay') {
+        const order = await createReservationPaymentOrder(reservation);
+        const loaded = await loadRazorpay();
+        if (!loaded) throw new Error('Could not load Razorpay Checkout. Check your connection and try again.');
+        const checkout = new window.Razorpay({
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Skypiea by Hideout Cafe',
+          description: 'Reservation deposit',
+          order_id: order.orderId,
+          prefill: { name: guestName, contact: guestPhone },
+          theme: { color: '#7a5829' },
+          handler: async (payment) => {
+            try {
+              const booking = await confirmReservationPayment(payment);
+              setReservationCode(booking.id);
+              setConfirmed(true);
+            } catch (error) {
+              setBookingError(error.message);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+          modal: { ondismiss: () => setIsSubmitting(false) }
+        });
+        checkout.open();
+        checkoutOpened = true;
+        return;
+      }
+      const booking = await createReservation(reservation);
       setReservationCode(booking.id);
       setConfirmed(true);
     } catch (error) {
       setBookingError(error.message);
     } finally {
-      setIsSubmitting(false);
+      if (!checkoutOpened) setIsSubmitting(false);
     }
   };
 
@@ -141,6 +209,10 @@ export const BookingModal = ({
                 <span className="text-[#74685e]">Party Size</span>
                 <span className="text-[#1d1b16] font-semibold">{guestCount} Guests</span>
               </div>
+              {paymentMethod === 'prepay' && <div className="flex justify-between py-1 border-b border-[#e8e2d8]">
+                <span className="text-[#74685e]">Deposit paid</span>
+                <span className="text-[#1d1b16] font-semibold">₹{guestCount * 300} via Razorpay</span>
+              </div>}
               <div className="flex justify-between py-1">
                 <span className="text-[#74685e]">Seating Area</span>
                 <span className="text-[#7a5829] font-medium">{currentZoneName}</span>
@@ -173,22 +245,20 @@ export const BookingModal = ({
                 1. Select Day & Time
               </label>
               
-              <div className="grid grid-cols-4 gap-2 mb-2.5">
-                {DAY_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    onClick={() => setSelectedDate(opt.date)}
-                    className={`py-2 px-1 text-center rounded border transition-colors cursor-pointer ${
-                      selectedDate === opt.date
-                        ? 'bg-[#1d1b16] text-white border-[#1d1b16] shadow-sm'
-                        : 'bg-[#fcfaf7] border-[#e8e2d8] text-[#1d1b16] hover:border-[#b28a56]'
-                    }`}
-                  >
-                    <span className="block text-xs font-semibold">{opt.label}</span>
-                    <span className="block text-[10px] opacity-70">{opt.sub}</span>
-                  </button>
-                ))}
+              <div className="mb-2.5 rounded border border-[#e8e2d8] bg-[#fcfaf7] p-3">
+                <label htmlFor="reservation-date" className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[#74685e]">
+                  Choose a date (up to one month ahead)
+                </label>
+                <input
+                  id="reservation-date"
+                  type="date"
+                  required
+                  min={MIN_BOOKING_DATE}
+                  max={MAX_BOOKING_DATE}
+                  value={selectedDate}
+                  onChange={(event) => setSelectedDate(event.target.value)}
+                  className="w-full rounded border border-[#e8e2d8] bg-white px-3 py-2 text-sm text-[#1d1b16] focus:border-[#b28a56] focus:outline-none"
+                />
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -197,10 +267,13 @@ export const BookingModal = ({
                     key={slot.time}
                     type="button"
                     onClick={() => setSelectedTime(slot.time)}
+                    disabled={isCheckingAvailability || slotAvailability?.[slot.time] === false}
                     className={`py-2 px-2 text-center rounded border transition-colors cursor-pointer ${
                       selectedTime === slot.time
                         ? 'border-[#7a5829] bg-[#fbf8f3] text-[#7a5829] font-bold shadow-xs'
-                        : 'border-[#e8e2d8] bg-[#fcfaf7] text-[#1d1b16] hover:border-[#b28a56]'
+                        : slotAvailability?.[slot.time] === false
+                          ? 'border-[#e8e2d8] bg-gray-100 text-gray-400 cursor-not-allowed line-through'
+                          : 'border-[#e8e2d8] bg-[#fcfaf7] text-[#1d1b16] hover:border-[#b28a56]'
                     }`}
                   >
                     <span className="block text-xs font-mono">{slot.time}</span>
@@ -208,6 +281,8 @@ export const BookingModal = ({
                   </button>
                 ))}
               </div>
+              {isCheckingAvailability && <p className="mt-2 text-[10px] text-[#74685e]">Checking table availability…</p>}
+              {availabilityError && <p className="mt-2 text-[10px] text-amber-800">Live availability could not be loaded. We’ll check your selected time when you submit.</p>}
             </div>
 
             {/* Guests & Seating Zone */}
@@ -216,22 +291,19 @@ export const BookingModal = ({
                 <label className="text-[11px] tracking-wider text-[#4f4541] uppercase font-bold block mb-2">
                   2. Number of Guests
                 </label>
-                <div className="flex gap-2">
-                  {GUEST_OPTIONS.map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => setGuestCount(count)}
-                      className={`flex-1 py-2 text-xs font-mono font-bold rounded border transition-colors cursor-pointer ${
-                        guestCount === count
-                          ? 'bg-[#1d1b16] text-white border-[#1d1b16]'
-                          : 'bg-[#fcfaf7] border-[#e8e2d8] text-[#1d1b16] hover:border-[#b28a56]'
-                      }`}
-                    >
-                      {count}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="15"
+                  step="1"
+                  inputMode="numeric"
+                  value={guestCount}
+                  onChange={(event) => setGuestCount(event.target.value)}
+                  aria-label="Number of guests, from 1 to 15"
+                  className="w-full bg-[#fcfaf7] border border-[#e8e2d8] rounded px-3 py-2 text-sm font-mono font-bold text-[#1d1b16] focus:outline-none focus:border-[#b28a56]"
+                />
+                <p className="text-[10px] text-[#74685e] mt-1">Enter 1 to 15 guests.</p>
               </div>
 
               <div>
@@ -282,18 +354,34 @@ export const BookingModal = ({
               />
             </div>
 
+            <div>
+              <label className="text-[11px] tracking-wider text-[#4f4541] uppercase font-bold block mb-2">
+                5. Payment Preference
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" onClick={() => setPaymentMethod('at_restaurant')} className={`rounded border px-3 py-2.5 text-left transition-colors ${paymentMethod === 'at_restaurant' ? 'border-[#7a5829] bg-[#fbf8f3]' : 'border-[#e8e2d8] bg-[#fcfaf7]'}`}>
+                  <span className="block text-xs font-semibold text-[#1d1b16]">Pay at the restaurant</span>
+                  <span className="block text-[10px] text-[#74685e]">No deposit required</span>
+                </button>
+                <button type="button" onClick={() => setPaymentMethod('prepay')} className={`rounded border px-3 py-2.5 text-left transition-colors ${paymentMethod === 'prepay' ? 'border-[#7a5829] bg-[#fbf8f3]' : 'border-[#e8e2d8] bg-[#fcfaf7]'}`}>
+                  <span className="block text-xs font-semibold text-[#1d1b16]">Prepay ₹{Number(guestCount || 0) * 300} deposit</span>
+                  <span className="block text-[10px] text-[#74685e]">₹300 per guest · Secure Razorpay checkout</span>
+                </button>
+              </div>
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-3 bg-[#1d1b16] hover:bg-[#b28a56] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-semibold tracking-[0.2em] uppercase rounded transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
               >
-                <span>{isSubmitting ? 'Submitting Reservation…' : 'Confirm Reservation'}</span>
+                <span>{isSubmitting ? 'Processing…' : paymentMethod === 'prepay' ? `Pay ₹${Number(guestCount || 0) * 300} & Confirm` : 'Confirm Reservation'}</span>
                 <span>→</span>
               </button>
               {bookingError && <p role="alert" className="text-center text-xs text-red-700 mt-2">{bookingError}</p>}
               <p className="text-center text-[10px] text-[#74685e] mt-2">
-                ✓ No prepayment required · Instant table hold at Level 15, Gomti Nagar
+                {paymentMethod === 'prepay' ? `₹300 per guest · ₹${Number(guestCount || 0) * 300} deposit total via Razorpay` : 'No prepayment required · Instant table hold at Level 15, Gomti Nagar'}
               </p>
             </div>
           </form>

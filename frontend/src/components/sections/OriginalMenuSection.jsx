@@ -6,7 +6,7 @@ import { ORIGINAL_MENU_PAGES } from '../../data/restaurantData.js';
 const INITIAL_CARD_LIMIT = 3;
 
 // Gallery component showing original printed menu photos (Clean White Theme with View More / View Less)
-export function OriginalMenuSection() {
+export function OriginalMenuSection({ pages = ORIGINAL_MENU_PAGES }) {
   const [activePageIndex, setActivePageIndex] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -19,16 +19,16 @@ export function OriginalMenuSection() {
   }
 
   function handlePrev() {
-    setActivePageIndex((prev) => (prev - 1 + ORIGINAL_MENU_PAGES.length) % ORIGINAL_MENU_PAGES.length);
+    setActivePageIndex((prev) => (prev - 1 + pages.length) % pages.length);
   }
 
   function handleNext() {
-    setActivePageIndex((prev) => (prev + 1) % ORIGINAL_MENU_PAGES.length);
+    setActivePageIndex((prev) => (prev + 1) % pages.length);
   }
 
   const visiblePages = isExpanded
-    ? ORIGINAL_MENU_PAGES
-    : ORIGINAL_MENU_PAGES.slice(0, INITIAL_CARD_LIMIT);
+    ? pages
+    : pages.slice(0, INITIAL_CARD_LIMIT);
 
   return (
     <section id="original-cards" className="py-12 sm:py-16 px-4 sm:px-8 bg-gray-50 text-gray-900 border-t border-gray-200">
@@ -98,7 +98,7 @@ export function OriginalMenuSection() {
         </div>
 
         {/* View More / View Less Toggle Button */}
-        {ORIGINAL_MENU_PAGES.length > INITIAL_CARD_LIMIT && (
+        {pages.length > INITIAL_CARD_LIMIT && (
           <div className="mt-8 text-center">
             {isExpanded ? (
               <button
@@ -117,7 +117,7 @@ export function OriginalMenuSection() {
                 onClick={() => setIsExpanded(true)}
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase tracking-wider rounded-md shadow-sm transition-all cursor-pointer transform hover:-translate-y-0.5"
               >
-                <span>View More Menu Cards ({ORIGINAL_MENU_PAGES.length - INITIAL_CARD_LIMIT} More)</span>
+                <span>View More Menu Cards ({pages.length - INITIAL_CARD_LIMIT} More)</span>
                 <ChevronDown className="w-4 h-4 text-white" />
               </button>
             )}
@@ -143,7 +143,7 @@ export function OriginalMenuSection() {
                   Original Menu Card
                 </span>
                 <h4 className="text-base sm:text-lg font-serif font-bold text-white">
-                  {ORIGINAL_MENU_PAGES[activePageIndex].title}
+                  {pages[activePageIndex].title}
                 </h4>
               </div>
 
@@ -161,8 +161,8 @@ export function OriginalMenuSection() {
             {/* High-Resolution Image Container */}
             <div className="relative w-full max-h-[80vh] flex items-center justify-center overflow-auto rounded-lg bg-black/50 p-1 border border-white/10">
               <img
-                src={ORIGINAL_MENU_PAGES[activePageIndex].image}
-                alt={ORIGINAL_MENU_PAGES[activePageIndex].title}
+                src={pages[activePageIndex].image}
+                alt={pages[activePageIndex].title}
                 className="max-h-[78vh] w-auto object-contain rounded shadow-2xl"
               />
 

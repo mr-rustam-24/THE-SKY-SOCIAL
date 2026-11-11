@@ -3,10 +3,10 @@ import { MapPin, Phone, MessageCircle, Clock, Calendar, ExternalLink } from 'luc
 import { RESTAURANT_INFO } from '../../data/restaurantData.js';
 
 // Contact & Location section (Clean White Theme)
-export function ContactSection({ onBookTable }) {
+export function ContactSection({ onBookTable, restaurantInfo = RESTAURANT_INFO }) {
   function handleWhatsAppClick() {
     const text = encodeURIComponent("Hello Skypiea by Hideout Café! I would like to reserve a table for lunch/dinner.");
-    window.open(`https://wa.me/${RESTAURANT_INFO.whatsapp}?text=${text}`, '_blank');
+    window.open(`https://wa.me/${restaurantInfo.whatsapp}?text=${text}`, '_blank');
   }
 
   return (
@@ -40,7 +40,7 @@ export function ContactSection({ onBookTable }) {
                 Our Location
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                {RESTAURANT_INFO.address}
+                {restaurantInfo.address}
               </p>
               <p className="text-xs text-amber-700 font-bold">
                 Gomti Nagar, Lucknow
@@ -73,7 +73,7 @@ export function ContactSection({ onBookTable }) {
                 Reservations & Catering inquiries:
               </p>
               <p className="font-serif text-lg font-extrabold text-gray-900">
-                {RESTAURANT_INFO.phone}
+                {restaurantInfo.phone}
               </p>
             </div>
 
@@ -100,11 +100,11 @@ export function ContactSection({ onBookTable }) {
               <div className="text-xs text-gray-600 space-y-1">
                 <p>
                   <strong className="text-gray-900">Monday – Friday:</strong><br />
-                  {RESTAURANT_INFO.hours.weekdays}
+                  {restaurantInfo.hours.weekdays}
                 </p>
                 <p className="pt-1">
                   <strong className="text-gray-900">Saturday – Sunday:</strong><br />
-                  {RESTAURANT_INFO.hours.weekends}
+                  {restaurantInfo.hours.weekends}
                 </p>
               </div>
             </div>

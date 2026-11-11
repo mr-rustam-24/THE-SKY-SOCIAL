@@ -33,7 +33,7 @@ export const ReservationModel = {
   },
 
  
-  async create({ userId = null, guestName, guestPhone, date, time, guestCount, zone, specialRequest = '' }) {
+  async create({ userId = null, guestName, guestPhone, date, time, guestCount, zone, specialRequest = '', paymentStatus = 'not_required', amountPaid = 0 }) {
     await db.read();
 
     const newReservation = {
@@ -47,6 +47,8 @@ export const ReservationModel = {
       zone,
       special_request: String(specialRequest).slice(0, 1000),
       status: 'confirmed',
+      payment_status: paymentStatus,
+      amount_paid: amountPaid,
       created_at: new Date().toISOString()
     };
 

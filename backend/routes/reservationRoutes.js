@@ -5,6 +5,8 @@ import { requireAuth, optionalAuth } from '../middleware/auth.js';
 const router = Router();
 
 router.get('/availability', ReservationController.checkAvailability);
+router.post('/payment-order', optionalAuth, ReservationController.createPaymentOrder);
+router.post('/confirm-payment', optionalAuth, ReservationController.confirmPayment);
 router.post('/', optionalAuth, ReservationController.createReservation);
 router.get('/', requireAuth, ReservationController.getUserReservations);
 router.get('/:id', ReservationController.getReservationById);
