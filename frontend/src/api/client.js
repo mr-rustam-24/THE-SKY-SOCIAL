@@ -15,3 +15,13 @@ export const createReservation = (reservation) => apiRequest('/reservations', {
   method: 'POST',
   body: JSON.stringify(reservation)
 });
+
+export const createReservationPaymentOrder = (reservation) => apiRequest('/reservations/payment-order', {
+  method: 'POST',
+  body: JSON.stringify(reservation)
+});
+
+export const confirmReservationPayment = (payment) => apiRequest('/reservations/confirm-payment', {
+  method: 'POST',
+  body: JSON.stringify(payment)
+});
