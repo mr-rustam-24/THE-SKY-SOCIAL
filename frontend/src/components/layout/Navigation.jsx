@@ -10,7 +10,8 @@ export function Navigation({
   onReturnToCover,
   currentUser,
   onOpenAuth,
-  onLogout
+  onLogout,
+  restaurantInfo = RESTAURANT_INFO
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -40,14 +41,14 @@ export function Navigation({
           <div>
             <div className="flex items-baseline gap-2">
               <span className="font-serif italic font-extrabold text-2xl sm:text-3xl text-gray-900 tracking-wide group-hover:text-amber-600 transition-colors">
-                Skypiea
+                {restaurantInfo.name}
               </span>
               <span className="text-xs sm:text-sm tracking-[0.2em] text-amber-600 font-bold uppercase">
                 RESTAURANT
               </span>
             </div>
             <span className="text-xs text-gray-500 font-medium tracking-wider block -mt-0.5">
-              by Hideout Café · Since 2015
+              {String(restaurantInfo.fullName || '').replace(restaurantInfo.name, '').trim()} · {restaurantInfo.established}
             </span>
           </div>
         </button>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, KeyRound, Smartphone, RefreshCw } from 'lucide-react';
+import { loginWithPassword, registerAccount, sendLoginOtp, verifyLoginOtp } from '../../api/client.js';
 
 // Clean, Student-Friendly & User-Friendly Authentication Modal
 // Features: Phone + OTP Login, Password Login, and Sign Up (No Skypiea branding)
@@ -30,7 +31,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   if (!isOpen) return null;
 
   // 1. Send OTP to Phone Number
-  function handleSendOtp(e) {
+  async function handleSendOtp(e) {
     if (e) e.preventDefault();
     setErrorMsg('');
 
@@ -41,12 +42,15 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    // Generate random 4-digit OTP
-    const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(newOtp);
-    setOtpSent(true);
-    setUserEnteredOtp('');
-    setResendTimer(30);
+    try {
+      const result = await sendLoginOtp(cleanPhone);
+      setGeneratedOtp(result.demo_otp || '');
+      setOtpSent(true);
+      setUserEnteredOtp('');
+      setResendTimer(30);
+    } catch (error) {
+      setErrorMsg(error.message);
+    }
   }
 
   // Auto-fill generated OTP for instant student/user testing
@@ -56,38 +60,19 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   }
 
   // 2. Verify OTP & Log In
-  function handleVerifyOtp(e) {
+  async function handleVerifyOtp(e) {
     e.preventDefault();
     setErrorMsg('');
-
-    if (userEnteredOtp.trim() !== generatedOtp.trim()) {
-      setErrorMsg('Invalid OTP. Please check the 4-digit code and try again.');
-      return;
+    try {
+      const result = await verifyLoginOtp(phone, userEnteredOtp.trim());
+      completeAuthentication(result, `Welcome, ${result.user.name}!`);
+    } catch (error) {
+      setErrorMsg(error.message);
     }
-
-    // Check if user already exists with this phone number
-    const savedUsers = JSON.parse(localStorage.getItem('restaurant_users') || '[]');
-    const existingUser = savedUsers.find((u) => u.phone === phone);
-
-    const loggedInUser = existingUser || {
-      name: `User ${phone.slice(-4)}`,
-      phone: phone,
-      email: `${phone.slice(-4)}@customer.com`
-    };
-
-    // Save session in localStorage
-    localStorage.setItem('restaurant_active_user', JSON.stringify(loggedInUser));
-    setSuccessMsg(`Welcome, ${loggedInUser.name}!`);
-
-    setTimeout(() => {
-      onAuthSuccess(loggedInUser);
-      onClose();
-      resetAll();
-    }, 800);
   }
 
   // 3. Password Login
-  function handlePasswordLogin(e) {
+  async function handlePasswordLogin(e) {
     e.preventDefault();
     setErrorMsg('');
 
@@ -96,37 +81,16 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    // Check saved users
-    const savedUsers = JSON.parse(localStorage.getItem('restaurant_users') || '[]');
-    const foundUser = savedUsers.find(
-      (u) =>
-        (u.email?.toLowerCase() === email.toLowerCase() || u.phone === email) &&
-        u.password === password
-    );
-
-    let loggedInUser;
-    if (foundUser) {
-      loggedInUser = { name: foundUser.name, email: foundUser.email, phone: foundUser.phone };
-    } else {
-      // Default friendly guest login
-      const displayName = email.includes('@')
-        ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)
-        : `User ${email.slice(-4)}`;
-      loggedInUser = { name: displayName, email: email, phone: '+91 98765 43210' };
+    try {
+      const result = await loginWithPassword({ phone_or_email: email.trim(), password });
+      completeAuthentication(result, `Welcome back, ${result.user.name}!`);
+    } catch (error) {
+      setErrorMsg(error.message);
     }
-
-    localStorage.setItem('restaurant_active_user', JSON.stringify(loggedInUser));
-    setSuccessMsg(`Welcome back, ${loggedInUser.name}!`);
-
-    setTimeout(() => {
-      onAuthSuccess(loggedInUser);
-      onClose();
-      resetAll();
-    }, 800);
   }
 
   // 4. Sign Up (Create New Account)
-  function handleSignUp(e) {
+  async function handleSignUp(e) {
     e.preventDefault();
     setErrorMsg('');
 
@@ -144,36 +108,28 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    const newUser = {
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim().toLowerCase() || `${cleanPhone}@customer.com`,
-      password: password
-    };
-
-    // Save to registered users list
-    const savedUsers = JSON.parse(localStorage.getItem('restaurant_users') || '[]');
-    savedUsers.push(newUser);
-    localStorage.setItem('restaurant_users', JSON.stringify(savedUsers));
-
-    // Set active session
-    const loggedInUser = { name: newUser.name, phone: newUser.phone, email: newUser.email };
-    localStorage.setItem('restaurant_active_user', JSON.stringify(loggedInUser));
-
-    setSuccessMsg(`Account created successfully! Welcome, ${newUser.name}!`);
-
-    setTimeout(() => {
-      onAuthSuccess(loggedInUser);
-      onClose();
-      resetAll();
-    }, 900);
+    try {
+      const result = await registerAccount({
+        name: name.trim(),
+        phone: cleanPhone,
+        email: email.trim().toLowerCase() || `${cleanPhone}@customer.com`,
+        password
+      });
+      completeAuthentication(result, `Account created successfully! Welcome, ${result.user.name}!`);
+    } catch (error) {
+      setErrorMsg(error.message);
+    }
   }
 
-  // Quick Demo credentials
-  function handleFillDemo() {
-    setEmail('aditya@example.com');
-    setPassword('password123');
-    setErrorMsg('');
+  function completeAuthentication({ user, token }, message) {
+    localStorage.setItem('restaurant_auth_token', token);
+    localStorage.setItem('restaurant_active_user', JSON.stringify(user));
+    setSuccessMsg(message);
+    setTimeout(() => {
+      onAuthSuccess(user);
+      onClose();
+      resetAll();
+    }, 800);
   }
 
   function resetAll() {
@@ -357,8 +313,8 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       {/* OTP Notification Banner with Auto-fill helper */}
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs text-amber-900">
                         <div>
-                          <span className="font-bold block">Demo OTP: {generatedOtp}</span>
-                          <span className="text-[11px] text-amber-700">Sent to +91 {phone}</span>
+                          <span className="font-bold block">Development OTP: {generatedOtp}</span>
+                          <span className="text-[11px] text-amber-700">Generated for +91 {phone}</span>
                         </div>
                         <button
                           type="button"
@@ -438,17 +394,10 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="mb-1">
                       <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Password
                       </label>
-                      <button
-                        type="button"
-                        onClick={handleFillDemo}
-                        className="text-[11px] font-bold text-amber-700 hover:text-amber-900 cursor-pointer"
-                      >
-                        Fill Demo
-                      </button>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

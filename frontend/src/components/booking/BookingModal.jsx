@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle2, MapPin, MessageCircle } from 'lucide-react';
 import { SEATING_ZONES } from '../../data/restaurantData.js';
-import { confirmReservationPayment, createReservation, createReservationPaymentOrder } from '../../api/client.js';
+import { confirmReservationPayment, createReservation, createReservationPaymentOrder, getReservationAvailability } from '../../api/client.js';
 
 const toDateInputValue = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 const today = new Date();
@@ -42,6 +42,9 @@ export const BookingModal = ({
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '+91 98765 43210');
   const [specialRequest, setSpecialRequest] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('at_restaurant');
+  const [slotAvailability, setSlotAvailability] = useState(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
 
   // Auto-fill user details if logged in
   React.useEffect(() => {
@@ -50,6 +53,30 @@ export const BookingModal = ({
       if (currentUser.phone) setGuestPhone(currentUser.phone);
     }
   }, [currentUser]);
+
+  React.useEffect(() => {
+    const guests = Number(guestCount);
+    if (!isOpen || !Number.isInteger(guests) || guests < 1 || guests > 15) return undefined;
+    let active = true;
+    setIsCheckingAvailability(true);
+    setAvailabilityError('');
+    getReservationAvailability({ date: selectedDate, guests, zone: selectedZone })
+      .then((result) => {
+        if (!active) return;
+        const available = Object.fromEntries(result.slots.map((slot) => [slot.time, slot.available]));
+        setSlotAvailability(available);
+        const firstAvailable = result.slots.find((slot) => slot.available);
+        if (firstAvailable && !available[selectedTime]) setSelectedTime(firstAvailable.time);
+      })
+      .catch((error) => {
+        if (active) {
+          setSlotAvailability(null);
+          setAvailabilityError(error.message);
+        }
+      })
+      .finally(() => { if (active) setIsCheckingAvailability(false); });
+    return () => { active = false; };
+  }, [isOpen, selectedDate, selectedZone, guestCount]);
 
   const [confirmed, setConfirmed] = useState(false);
   const [reservationCode, setReservationCode] = useState('');
@@ -240,10 +267,13 @@ export const BookingModal = ({
                     key={slot.time}
                     type="button"
                     onClick={() => setSelectedTime(slot.time)}
+                    disabled={isCheckingAvailability || slotAvailability?.[slot.time] === false}
                     className={`py-2 px-2 text-center rounded border transition-colors cursor-pointer ${
                       selectedTime === slot.time
                         ? 'border-[#7a5829] bg-[#fbf8f3] text-[#7a5829] font-bold shadow-xs'
-                        : 'border-[#e8e2d8] bg-[#fcfaf7] text-[#1d1b16] hover:border-[#b28a56]'
+                        : slotAvailability?.[slot.time] === false
+                          ? 'border-[#e8e2d8] bg-gray-100 text-gray-400 cursor-not-allowed line-through'
+                          : 'border-[#e8e2d8] bg-[#fcfaf7] text-[#1d1b16] hover:border-[#b28a56]'
                     }`}
                   >
                     <span className="block text-xs font-mono">{slot.time}</span>
@@ -251,6 +281,8 @@ export const BookingModal = ({
                   </button>
                 ))}
               </div>
+              {isCheckingAvailability && <p className="mt-2 text-[10px] text-[#74685e]">Checking table availability…</p>}
+              {availabilityError && <p className="mt-2 text-[10px] text-amber-800">Live availability could not be loaded. We’ll check your selected time when you submit.</p>}
             </div>
 
             {/* Guests & Seating Zone */}

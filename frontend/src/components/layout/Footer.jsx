@@ -3,14 +3,14 @@ import { ArrowUp, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { RESTAURANT_INFO } from '../../data/restaurantData.js';
 
 // Clean, Student-Friendly White Theme Footer
-export function Footer({ onNavigate, onOpenBooking, onReturnToCover }) {
+export function Footer({ onNavigate, onOpenBooking, onReturnToCover, restaurantInfo = RESTAURANT_INFO }) {
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function handleWhatsAppClick() {
     const text = encodeURIComponent("Hello Skypiea by Hideout Café! I'd like to book a table.");
-    window.open(`https://wa.me/${RESTAURANT_INFO.whatsapp}?text=${text}`, '_blank');
+    window.open(`https://wa.me/${restaurantInfo.whatsapp}?text=${text}`, '_blank');
   }
 
   return (
@@ -29,7 +29,7 @@ export function Footer({ onNavigate, onOpenBooking, onReturnToCover }) {
               </span>
             </div>
             <p className="text-xs text-gray-600 leading-relaxed font-normal">
-              "{RESTAURANT_INFO.tagline}." Serving freshly prepared Indian Hearth dishes, artisan Italian pizzas, wok specialities and soothing brews in Gomti Nagar since 2015.
+              "{restaurantInfo.tagline}." Serving freshly prepared Indian Hearth dishes, artisan Italian pizzas, wok specialities and soothing brews in {restaurantInfo.neighborhood} since {String(restaurantInfo.established || 'Since 2015').replace(/^Since /, '')}.
             </p>
             <div className="flex items-center gap-2 pt-1 text-xs text-amber-800 font-semibold">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
@@ -86,15 +86,15 @@ export function Footer({ onNavigate, onOpenBooking, onReturnToCover }) {
             <div className="text-xs text-gray-600 space-y-2">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p>{RESTAURANT_INFO.address}</p>
+                <p>{restaurantInfo.address}</p>
               </div>
               <p className="text-[11px] text-gray-500">
-                Monday – Friday: {RESTAURANT_INFO.hours.weekdays}<br />
-                Saturday – Sunday: {RESTAURANT_INFO.hours.weekends}
+                Monday – Friday: {restaurantInfo.hours.weekdays}<br />
+                Saturday – Sunday: {restaurantInfo.hours.weekends}
               </p>
               <div className="flex items-center gap-2 pt-1 text-gray-900">
                 <Phone className="w-3.5 h-3.5 text-amber-600" />
-                <span className="font-bold">{RESTAURANT_INFO.phone}</span>
+                <span className="font-bold">{restaurantInfo.phone}</span>
               </div>
             </div>
           </div>
@@ -152,7 +152,7 @@ export function Footer({ onNavigate, onOpenBooking, onReturnToCover }) {
 
         {/* Footer Bottom Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-3">
-          <p>© {new Date().getFullYear()} {RESTAURANT_INFO.fullName}. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} {restaurantInfo.fullName}. All Rights Reserved.</p>
           <div className="flex items-center gap-3 font-medium">
             <span>Gomti Nagar, Lucknow</span>
             <span>·</span>
