@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import './db.js';
+import db from './db.js';
 
 import authRoutes from './routes/authRoutes.js';
 import reservationRoutes from './routes/reservationRoutes.js';
@@ -50,6 +50,11 @@ app.get('/api/v1/menu', (req, res) => {
 
 app.get('/api/v1/menu/pages', (req, res) => {
   res.json({ data: ORIGINAL_MENU_PAGES, error: null });
+});
+
+// ✅ Live Database Viewer Endpoint
+app.get('/api/v1/admin/db', (req, res) => {
+  res.json({ data: db.data, error: null });
 });
 
 app.use('/api/v1/auth', authRoutes);
