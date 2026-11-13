@@ -2,6 +2,18 @@
 A responsive restaurant website with an online menu, food ordering, user authentication, and restaurant management features.
 # Skypiea Restaurant
 
+🌐 Live Project Links
+Frontend (Live Website): https://the-sky-social.vercel.app
+Backend API (Render): https://the-sky-social.onrender.com
+API Health Check: https://the-sky-social.onrender.com/api/v1/health
+Live Database Preview: https://the-sky-social.onrender.com/api/v1/admin/db
+
+🛠️ Tech Stack & Architecture
+Frontend: React.js, Vite, Tailwind CSS (Hosted on Vercel)
+Backend: Node.js, Express.js (MVC Architecture, Hosted on Render)
+Database: LowDB (File-based NoSQL / JSON Document Store)
+Authentication: JWT (JSON Web Tokens) & OTP Verification
+
 ## Run the app with the API
 
 Use two terminals from the project root.
